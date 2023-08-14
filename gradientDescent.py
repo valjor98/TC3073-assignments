@@ -1,4 +1,3 @@
-# Importing required libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -30,9 +29,9 @@ def newton_method(f, gradf, hessf, x0, max_iters=1000, tol=1e-6):
         history.append(x)
     return x, np.array(history)
 
-# Test functions
 A = 10
 
+# Sphere function
 def sphere(x):
     return np.sum(x**2)
 
@@ -42,6 +41,7 @@ def sphere_grad(x):
 def sphere_hess(x):
     return 2*np.eye(len(x))
 
+# Rastrigin function
 def rastrigin(x):
     n = len(x)
     return A*n + np.sum(x**2 - A*np.cos(2*np.pi*x))
@@ -52,16 +52,45 @@ def rastrigin_grad(x):
 def rastrigin_hess(x):
     return 2*np.eye(len(x)) + 4*(A*np.pi**2)*np.diag(np.cos(2*np.pi*x))
 
+# Drop-Wave function
+def drop_wave(x):
+    return -(1 + np.cos(12 * np.sqrt(x[0]**2 + x[1]**2))) / (0.5 * (x[0]**2 + x[1]**2) + 2)
 
+def drop_wave_grad(x):
+    x1, x2 = x
+    denom = 0.5 * (x1**2 + x2**2) + 2
+    numer = np.cos(12 * np.sqrt(x1**2 + x2**2))
+    
+    dfdx1 = ((x1 * (24 * numer + 1)) * np.sin(12 * np.sqrt(x1**2 + x2**2)) 
+             - (x1 * (1 + numer))) / (denom ** 2)
+    dfdx2 = ((x2 * (24 * numer + 1)) * np.sin(12 * np.sqrt(x1**2 + x2**2)) 
+             - (x2 * (1 + numer))) / (denom ** 2)
+    
+    return np.array([dfdx1, dfdx2])
 
-# Tests
-x0 = np.array([1.0, 1.0])
+def drop_wave_hess(x):
+    # Placeholder
+    return np.eye(2)
 
-x_min_gd, history_gd = gradient_descent(sphere, sphere_grad, x0)
-print("Minimum with Gradient Descent:", x_min_gd)
+# Matyas function
+def matyas(x):
+    return 0.26 * (x[0]**2 + x[1]**2) - 0.48 * x[0] * x[1]
 
-x_min_newton, history_newton = newton_method(sphere, sphere_grad, sphere_hess, x0)
-print("Minimum with Newton's method:", x_min_newton)
+def matyas_grad(x):
+    return np.array([0.52*x[0] - 0.48*x[1], 0.52*x[1] - 0.48*x[0]])
+
+def matyas_hess(x):
+    return np.array([[0.52, -0.48], [-0.48, 0.52]])
+
+# Rosenbrock function
+def rosenbrock(x):
+    return (1-x[0])**2 + 100*(x[1]-x[0]**2)**2
+
+def rosenbrock_grad(x):
+    return np.array([-2*(1-x[0]) - 400*x[0]*(x[1]-x[0]**2), 200*(x[1]-x[0]**2)])
+
+def rosenbrock_hess(x):
+    return np.array([[2 - 400*x[1] + 1200*x[0]**2, -400*x[0]], [-400*x[0], 200]])
 
 # Plot
 def plot_contour(f, x_range=(-2, 2), y_range=(-2, 2), history=None):
@@ -78,15 +107,28 @@ def plot_contour(f, x_range=(-2, 2), y_range=(-2, 2), history=None):
         plt.scatter(history[:, 0], history[:, 1], c='red', marker='o')
         plt.plot(history[:, 0], history[:, 1], c='red', linewidth=2)
 
+    plt.title(f.__name__)
     plt.show()
 
-# Plot for Sphere function with Gradient Descent history
-plot_contour(sphere, history=history_gd)
-
-# 5. Tabulate sequences:
+# Tabulate sequences
 def tabulate_history(history):
     df = pd.DataFrame(history, columns=["x", "y"])
     return df
 
-# Displaying the history for Sphere function with Gradient Descent:
-print(tabulate_history(history_gd))
+# Tests
+x0 = np.array([1.0, 1.0])
+
+functions = [(sphere, sphere_grad, sphere_hess), 
+             (rastrigin, rastrigin_grad, rastrigin_hess),
+             (drop_wave, drop_wave_grad, drop_wave_hess),
+             (matyas, matyas_grad, matyas_hess),
+             (rosenbrock, rosenbrock_grad, rosenbrock_hess)]
+
+for func, grad, hess in functions:
+    x_min_gd, history_gd = gradient_descent(func, grad, x0)
+    print(f"Minimum of {func.__name__} with Gradient Descent:", x_min_gd)
+    x_min_newton, history_newton = newton_method(func, grad, hess, x0)
+    print(f"Minimum of {func.__name__} with Newton's method:", x_min_newton)
+    plot_contour(func, history=history_gd)
+    print(f"History of {func.__name__} with Gradient Descent:")
+    print(tabulate_history(history_gd))
